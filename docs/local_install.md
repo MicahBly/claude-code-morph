@@ -26,22 +26,40 @@ If `/dev/kvm` doesn't exist, see the Troubleshooting section below.
 #### Ubuntu/Debian:
 ```bash
 sudo apt update
-sudo apt install -y git nodejs npm qemu-system-x86 qemu-utils
+# Installs QEMU for all architectures
+sudo apt install -y git nodejs npm qemu-system qemu-utils
 ```
 
 #### Fedora:
 ```bash
-sudo dnf install -y git nodejs npm qemu
+# For x86_64 systems
+sudo dnf install -y git nodejs npm qemu-system-x86
+
+# For ARM64/aarch64 systems  
+sudo dnf install -y git nodejs npm qemu-system-aarch64
 ```
 
 #### Arch Linux:
 ```bash
-sudo pacman -S git nodejs npm qemu
+# Installs QEMU for all architectures
+sudo pacman -S git nodejs npm qemu-full
 ```
 
 #### openSUSE:
 ```bash
 sudo zypper install -y git nodejs npm qemu
+```
+
+#### macOS:
+```bash
+# Install Homebrew if not already installed
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Node.js (QEMU not needed on macOS)
+brew install node
+
+# Install Claude CLI
+npm install -g @anthropic-ai/claude-code
 ```
 
 ### 2. Install Claude CLI

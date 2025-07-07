@@ -69,7 +69,9 @@ const isMorphBoxInstalled = () => {
 const isQemuInstalled = () => {
   if (process.platform !== 'linux') return true;
   try {
-    execSync('which qemu-img', { stdio: 'ignore' });
+    // Check for the architecture-specific QEMU binary
+    const arch = process.arch === 'arm64' || process.arch === 'aarch64' ? 'aarch64' : 'x86_64';
+    execSync(`which qemu-system-${arch}`, { stdio: 'ignore' });
     return true;
   } catch {
     return false;
@@ -78,11 +80,12 @@ const isQemuInstalled = () => {
 
 // Detect package manager
 const detectPackageManager = () => {
+  const arch = process.arch === 'arm64' || process.arch === 'aarch64' ? 'aarch64' : 'x86';
   const managers = [
-    { cmd: 'apt-get', check: 'which apt-get', install: 'sudo apt-get install -y qemu-system-x86 qemu-utils' },
-    { cmd: 'dnf', check: 'which dnf', install: 'sudo dnf install -y qemu' },
+    { cmd: 'apt-get', check: 'which apt-get', install: 'sudo apt-get install -y qemu-system qemu-utils' },
+    { cmd: 'dnf', check: 'which dnf', install: `sudo dnf install -y qemu-system-${arch}` },
     { cmd: 'yum', check: 'which yum', install: 'sudo yum install -y qemu' },
-    { cmd: 'pacman', check: 'which pacman', install: 'sudo pacman -S --noconfirm qemu' },
+    { cmd: 'pacman', check: 'which pacman', install: 'sudo pacman -S --noconfirm qemu-full' },
     { cmd: 'zypper', check: 'which zypper', install: 'sudo zypper install -y qemu' }
   ];
   
@@ -163,6 +166,25 @@ const launchInMorphBox = () => {
       if (morphboxOutput.includes('Lima is not installed') || morphboxOutput.includes('limactl: command not found')) {
         console.log(chalk.yellow('\n⚠️  Lima is not installed. MorphBox requires Lima to create VMs.'));
         console.log(chalk.yellow('Please run morph again to install Lima, or install it manually.'));
+      }
+      
+      // Check if the error is due to missing QEMU
+      if (morphboxOutput.includes('failed to find the QEMU binary') || 
+          morphboxOutput.includes('qemu-system-aarch64": executable file not found') ||
+          morphboxOutput.includes('qemu-system-x86_64": executable file not found')) {
+        console.log(chalk.yellow('\n⚠️  QEMU is not installed for your architecture.'));
+        
+        if (process.platform === 'darwin') {
+          console.log(chalk.blue('On macOS, Lima should use native virtualization.'));
+          console.log(chalk.yellow('This error suggests the VM configuration needs updating.'));
+          console.log(chalk.cyan('Please update MorphBox to the latest version.'));
+        } else if (process.platform === 'linux') {
+          const arch = process.arch === 'arm64' ? 'aarch64' : 'x86';
+          console.log(chalk.blue(`Install QEMU for ${arch}:`));
+          console.log(chalk.gray('  Ubuntu/Debian: sudo apt install qemu-system'));
+          console.log(chalk.gray('  Fedora: sudo dnf install qemu-system-' + arch));
+          console.log(chalk.gray('  Arch: sudo pacman -S qemu-full'));
+        }
       }
       
       // Check if the error is due to KVM not being available
