@@ -55,6 +55,10 @@ const isInsideMorphBox = () => {
 const isMorphBoxInstalled = () => {
   try {
     execSync('which morphbox', { stdio: 'ignore' });
+    // Also check if Lima is installed on Linux
+    if (process.platform === 'linux') {
+      execSync('which limactl', { stdio: 'ignore' });
+    }
     return true;
   } catch {
     return false;
@@ -114,6 +118,7 @@ const launchInMorphBox = () => {
   const morphCommand = `cd /workspace && morph ${args.join(' ')}`;
   
   // Launch MorphBox with our command
+  console.log(chalk.gray('Running: morphbox --shell -c ' + morphCommand));
   const morphbox = spawn('morphbox', ['--shell', '-c', morphCommand], {
     stdio: 'inherit',
     cwd: cwd
@@ -140,6 +145,22 @@ const launchInMorphBox = () => {
       if (morphboxOutput.includes('Lima is not installed') || morphboxOutput.includes('limactl: command not found')) {
         console.log(chalk.yellow('\n⚠️  Lima is not installed. MorphBox requires Lima to create VMs.'));
         console.log(chalk.yellow('Please run morph again to install Lima, or install it manually.'));
+      }
+      
+      // Check if the error is due to KVM not being available
+      if (morphboxOutput.includes('Could not access KVM kernel module') || morphboxOutput.includes('failed to initialize kvm')) {
+        console.log(chalk.yellow('\n⚠️  KVM virtualization is not available on this system.'));
+        console.log(chalk.yellow('This usually happens on:'));
+        console.log(chalk.gray('  - VPS/cloud servers without nested virtualization'));
+        console.log(chalk.gray('  - Docker containers'));
+        console.log(chalk.gray('  - WSL without KVM support'));
+        console.log('');
+        console.log(chalk.blue('Alternative options:'));
+        console.log(chalk.cyan('1. Use Claude CLI directly (without MorphBox protection):'));
+        console.log(chalk.gray('   morph --skip-morphbox'));
+        console.log('');
+        console.log(chalk.cyan('2. Use a cloud VM with nested virtualization enabled'));
+        console.log(chalk.cyan('3. Use a local machine or bare metal server'));
       }
     }
     process.exit(code);
