@@ -9,10 +9,22 @@
   - Handles Lima installation failure gracefully with helpful error messages
   - Improves error detection when morphbox fails due to missing Lima
 
+- KVM virtualization detection and helpful error messages
+  - Detects when system lacks KVM support (common on VPS/containers)
+  - Provides clear explanation of why MorphBox can't run
+  - Suggests alternatives including --skip-morphbox flag
+  - Lists common scenarios where KVM is unavailable
+
 ### Fixed
 - MorphBox installation no longer fails silently when Lima is missing
 - Better error messages when sudo is required for installation
 - More user-friendly installation flow with clear prompts and options
+- Clear guidance when virtualization is not available
+
+### Technical Notes
+- Lima fundamentally requires hardware virtualization (KVM) on Linux
+- Software emulation (TCG) is not well supported by Lima
+- MorphBox now detects this limitation and provides alternatives
 
 ## 2025-07-06
 

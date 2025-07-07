@@ -1,0 +1,3 @@
+# Morph Configuration
+# Set to true if your system doesn't support KVM virtualization
+SKIP_MORPHBOX=true

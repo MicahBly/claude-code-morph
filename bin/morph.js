@@ -120,7 +120,7 @@ const launchInMorphBox = () => {
   // Launch MorphBox with our command
   console.log(chalk.gray('Running: morphbox --shell -c ' + morphCommand));
   const morphbox = spawn('morphbox', ['--shell', '-c', morphCommand], {
-    stdio: 'inherit',
+    stdio: ['inherit', 'pipe', 'pipe'],
     cwd: cwd
   });
   
@@ -131,15 +131,33 @@ const launchInMorphBox = () => {
   
   let morphboxOutput = '';
   morphbox.stdout?.on('data', (data) => {
+    process.stdout.write(data); // Show output to user
     morphboxOutput += data.toString();
   });
   morphbox.stderr?.on('data', (data) => {
+    process.stderr.write(data); // Show errors to user
     morphboxOutput += data.toString();
   });
   
   morphbox.on('exit', (code) => {
     if (code !== 0) {
       logError(`MorphBox exited with code ${code}\nOutput:\n${morphboxOutput}`);
+      
+      // Check if Lima mentioned an error log
+      let kvmError = false;
+      if (morphboxOutput.includes('ha.stderr.log')) {
+        // Try to read the Lima error log
+        const limaErrorLog = path.join(os.homedir(), '.lima/morphbox/ha.stderr.log');
+        try {
+          const errorContent = fs.readFileSync(limaErrorLog, 'utf8');
+          if (errorContent.includes('Could not access KVM kernel module') || 
+              errorContent.includes('failed to initialize kvm')) {
+            kvmError = true;
+          }
+        } catch (e) {
+          // Ignore if we can't read the file
+        }
+      }
       
       // Check if the error is due to Lima not being installed
       if (morphboxOutput.includes('Lima is not installed') || morphboxOutput.includes('limactl: command not found')) {
@@ -148,7 +166,9 @@ const launchInMorphBox = () => {
       }
       
       // Check if the error is due to KVM not being available
-      if (morphboxOutput.includes('Could not access KVM kernel module') || morphboxOutput.includes('failed to initialize kvm')) {
+      if (kvmError || morphboxOutput.includes('Could not access KVM kernel module') || 
+          morphboxOutput.includes('failed to initialize kvm') ||
+          morphboxOutput.includes('qemu[stderr]: qemu-system-x86_64: Could not access KVM')) {
         console.log(chalk.yellow('\n⚠️  KVM virtualization is not available on this system.'));
         console.log(chalk.yellow('This usually happens on:'));
         console.log(chalk.gray('  - VPS/cloud servers without nested virtualization'));
@@ -190,11 +210,31 @@ const launchClaude = (args) => {
   
   claude.on('exit', (code) => {
     // TODO: Save context before exit
-    if (code !== 0) {
+    if (code !== 0 && args.length === 0) {
+      // Don't log error for interactive mode exit
+    } else if (code !== 0) {
       logError(`Claude CLI exited with code ${code}`);
     }
     process.exit(code);
   });
+};
+
+// Read configuration
+const readConfig = () => {
+  const config = {};
+  const configPath = path.join(projectRoot, '.morphrc');
+  if (fs.existsSync(configPath)) {
+    const content = fs.readFileSync(configPath, 'utf8');
+    content.split('\n').forEach(line => {
+      if (line.trim() && !line.startsWith('#')) {
+        const [key, value] = line.split('=');
+        if (key && value) {
+          config[key.trim()] = value.trim();
+        }
+      }
+    });
+  }
+  return config;
 };
 
 // Main program
@@ -207,6 +247,15 @@ program
   .argument('[claude-args...]', 'Arguments to pass to Claude CLI')
   .allowUnknownOption()
   .action((claudeArgs = [], options) => {
+    // Read config
+    const config = readConfig();
+    
+    // Check if we should skip MorphBox based on config
+    if (config.SKIP_MORPHBOX === 'true' && !options.skipMorphbox) {
+      options.skipMorphbox = true;
+      console.log(chalk.gray('(Skipping MorphBox based on .morphrc configuration)'));
+    }
+    
     // Show warning if skipping MorphBox
     if (options.skipMorphbox) {
       console.log(chalk.yellow('⚠️  Warning: Running without MorphBox protection!'));
