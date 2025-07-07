@@ -1,10 +1,30 @@
 #!/usr/bin/env node
 
-const { program } = require('commander');
-const chalk = require('chalk');
-const { spawn, execSync } = require('child_process');
+// Check if node_modules exists, if not, install dependencies
 const path = require('path');
 const fs = require('fs');
+const { execSync, spawn } = require('child_process');
+
+const projectRoot = path.join(__dirname, '..');
+const nodeModulesPath = path.join(projectRoot, 'node_modules');
+
+if (!fs.existsSync(nodeModulesPath)) {
+  console.log('📦 Installing dependencies...');
+  try {
+    execSync('npm install', { 
+      cwd: projectRoot,
+      stdio: 'inherit'
+    });
+    console.log('✅ Dependencies installed!\n');
+  } catch (error) {
+    console.error('❌ Failed to install dependencies. Please run: npm install');
+    process.exit(1);
+  }
+}
+
+// Now we can require the dependencies
+const { program } = require('commander');
+const chalk = require('chalk');
 const os = require('os');
 
 // Setup logging
@@ -104,9 +124,23 @@ const launchInMorphBox = () => {
     process.exit(1);
   });
   
+  let morphboxOutput = '';
+  morphbox.stdout?.on('data', (data) => {
+    morphboxOutput += data.toString();
+  });
+  morphbox.stderr?.on('data', (data) => {
+    morphboxOutput += data.toString();
+  });
+  
   morphbox.on('exit', (code) => {
     if (code !== 0) {
-      logError(`MorphBox exited with code ${code}`);
+      logError(`MorphBox exited with code ${code}\nOutput:\n${morphboxOutput}`);
+      
+      // Check if the error is due to Lima not being installed
+      if (morphboxOutput.includes('Lima is not installed') || morphboxOutput.includes('limactl: command not found')) {
+        console.log(chalk.yellow('\n⚠️  Lima is not installed. MorphBox requires Lima to create VMs.'));
+        console.log(chalk.yellow('Please run morph again to install Lima, or install it manually.'));
+      }
     }
     process.exit(code);
   });
@@ -220,7 +254,78 @@ program
           return; // Wait for clone to complete
         }
         
-        // Run MorphBox installer
+        // Check if Lima is installed first
+        const isLimaInstalled = () => {
+          try {
+            execSync('which limactl', { stdio: 'ignore' });
+            return true;
+          } catch {
+            return false;
+          }
+        };
+        
+        if (!isLimaInstalled() && process.platform === 'linux') {
+          console.log(chalk.yellow('⚠️  Lima is not installed. It is required for MorphBox on Linux.'));
+          console.log(chalk.blue('Lima installation requires sudo access to copy binaries to /usr/local/bin'));
+          
+          // Create a prompt to install Lima
+          const readline = require('readline');
+          const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+            terminal: false
+          });
+          
+          rl.question(chalk.green('Install Lima now? (requires sudo password) [Y/n] '), (answer) => {
+            rl.close();
+            
+            if (answer.toLowerCase() === 'n') {
+              console.log(chalk.gray('Installation cancelled.'));
+              console.log(chalk.yellow('To install Lima manually, run the MorphBox installer:'));
+              console.log(chalk.cyan(`  cd ${morphboxPath} && ./install.sh`));
+              process.exit(0);
+            }
+            
+            console.log(chalk.blue('Installing Lima (this will prompt for sudo password)...\n'));
+            
+            // Run the installer with proper terminal handling for sudo
+            const installScript = path.join(morphboxPath, 'install.sh');
+            const installProcess = spawn('bash', [installScript], {
+              stdio: 'inherit',
+              cwd: morphboxPath
+            });
+            
+            installProcess.on('error', (err) => {
+              logError('Failed to run MorphBox installer', err);
+              process.exit(1);
+            });
+            
+            installProcess.on('exit', (code) => {
+              if (code === 0) {
+                console.log(chalk.green('\n✅ MorphBox and Lima installed successfully!'));
+                console.log(chalk.blue('Continuing with morph...\n'));
+                
+                // Re-run morph after installation
+                const morphProcess = spawn(process.argv[0], process.argv.slice(1), {
+                  stdio: 'inherit'
+                });
+                
+                morphProcess.on('exit', (code) => {
+                  process.exit(code);
+                });
+              } else {
+                logError(`MorphBox installation failed with code ${code}`);
+                console.log(chalk.red('\n❌ Installation failed'));
+                console.log(chalk.yellow('You may need to install Lima manually.'));
+                process.exit(1);
+              }
+            });
+          });
+          
+          return; // Wait for user response
+        }
+        
+        // If Lima is already installed or on macOS, just run the installer
         console.log(chalk.blue('Running MorphBox installer...'));
         const installScript = path.join(morphboxPath, 'install.sh');
         

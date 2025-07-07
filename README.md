@@ -9,10 +9,28 @@ A minimal wrapper for Claude CLI that adds safety through MorphBox integration, 
 - 💾 **Context Persistence**: Never lose your place between sessions (coming soon)
 - 🔄 **Self-Modifying**: Morph mode lets you improve the tool using Claude itself (coming soon)
 
-## Installation
+## Quick Start
 
 ```bash
+git clone https://github.com/MicahBly/claude-code-morph
+cd claude-code-morph
+./bin/morph.js
+```
+
+That's it! The script will automatically:
+- Install npm dependencies
+- Clone and install MorphBox
+- Prompt to install QEMU (Linux only)
+- Create a secure VM
+- Launch Claude
+
+## Installation (Optional)
+
+For global access:
+```bash
 npm install -g claude-code-morph
+# Then from anywhere:
+morph
 ```
 
 Or use without installing:
