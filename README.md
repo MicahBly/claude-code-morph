@@ -4,25 +4,40 @@ A minimal wrapper for Claude CLI that adds safety through MorphBox integration, 
 
 ## Features
 
-- 🔒 **Always Safe**: Automatically runs Claude in MorphBox sandbox
+- 🔒 **Always Safe**: Automatically runs Claude in MorphBox sandbox (when available)
 - 📝 **Prompt Queue**: Queue up multiple prompts (coming soon)
 - 💾 **Context Persistence**: Never lose your place between sessions (coming soon)
 - 🔄 **Self-Modifying**: Morph mode lets you improve the tool using Claude itself (coming soon)
+- ⚡ **Smart Fallback**: Automatically detects when virtualization isn't available
 
 ## Quick Start
 
 ```bash
 git clone https://github.com/MicahBly/claude-code-morph
 cd claude-code-morph
-./bin/morph.js
+./bin/morph.js "Hello, Claude!"
 ```
 
 That's it! The script will automatically:
 - Install npm dependencies
-- Clone and install MorphBox
-- Prompt to install QEMU (Linux only)
-- Create a secure VM
-- Launch Claude
+- Detect if MorphBox/virtualization is available
+- Fall back to direct Claude CLI if needed
+- Launch Claude with your prompt
+
+### For VPS/Container Users
+
+If you're on a VPS or container without KVM support, you'll see a helpful message. You can either:
+
+1. Use the skip flag:
+   ```bash
+   ./bin/morph.js --skip-morphbox "Your prompt here"
+   ```
+
+2. Or set it permanently in `.morphrc`:
+   ```bash
+   echo "SKIP_MORPHBOX=true" > .morphrc
+   ./bin/morph.js "Your prompt here"
+   ```
 
 ## Installation (Optional)
 

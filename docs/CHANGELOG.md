@@ -26,6 +26,11 @@
 - Software emulation (TCG) is not well supported by Lima
 - MorphBox now detects this limitation and provides alternatives
 
+### Configuration
+- Added `.morphrc` configuration file support
+- Set `SKIP_MORPHBOX=true` to permanently skip MorphBox
+- Useful for VPS/container environments without virtualization
+
 ## 2025-07-06
 
 ### Added
