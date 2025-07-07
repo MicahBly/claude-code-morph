@@ -176,8 +176,11 @@ const launchInMorphBox = () => {
         
         if (process.platform === 'darwin') {
           console.log(chalk.blue('On macOS, Lima should use native virtualization.'));
-          console.log(chalk.yellow('This error suggests the VM configuration needs updating.'));
-          console.log(chalk.cyan('Please update MorphBox to the latest version.'));
+          console.log(chalk.yellow('This error suggests an old VM instance exists.'));
+          console.log('');
+          console.log(chalk.cyan('To fix this, delete the old instance and try again:'));
+          console.log(chalk.gray('  limactl delete morphbox -f'));
+          console.log(chalk.gray('  ./bin/morph.js'));
         } else if (process.platform === 'linux') {
           const arch = process.arch === 'arm64' ? 'aarch64' : 'x86';
           console.log(chalk.blue(`Install QEMU for ${arch}:`));
