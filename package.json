@@ -1,0 +1,37 @@
+{
+  "name": "claude-code-morph",
+  "version": "0.1.0",
+  "description": "Safe Claude CLI wrapper with MorphBox integration and prompt queue",
+  "main": "index.js",
+  "bin": {
+    "morph": "./bin/morph.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bin/morph.js"
+  },
+  "keywords": [
+    "claude",
+    "cli",
+    "ai",
+    "morphbox",
+    "sandbox",
+    "development",
+    "wrapper"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^11.1.0",
+    "blessed": "^0.1.81"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "preferGlobal": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-code-morph.git"
+  }
+}
