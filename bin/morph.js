@@ -169,18 +169,15 @@ const launchInMorphBox = () => {
       if (kvmError || morphboxOutput.includes('Could not access KVM kernel module') || 
           morphboxOutput.includes('failed to initialize kvm') ||
           morphboxOutput.includes('qemu[stderr]: qemu-system-x86_64: Could not access KVM')) {
-        console.log(chalk.yellow('\n⚠️  KVM virtualization is not available on this system.'));
-        console.log(chalk.yellow('This usually happens on:'));
-        console.log(chalk.gray('  - VPS/cloud servers without nested virtualization'));
-        console.log(chalk.gray('  - Docker containers'));
-        console.log(chalk.gray('  - WSL without KVM support'));
+        console.log(chalk.red('\n❌ KVM virtualization is required but not available on this system.'));
+        console.log(chalk.yellow('\nMorphBox requires hardware virtualization to provide security isolation.'));
+        console.log(chalk.yellow('This typically fails on:'));
+        console.log(chalk.gray('  • VPS/cloud servers (no nested virtualization)'));
+        console.log(chalk.gray('  • Docker containers'));
+        console.log(chalk.gray('  • Some WSL2 setups'));
         console.log('');
-        console.log(chalk.blue('Alternative options:'));
-        console.log(chalk.cyan('1. Use Claude CLI directly (without MorphBox protection):'));
-        console.log(chalk.gray('   morph --skip-morphbox'));
-        console.log('');
-        console.log(chalk.cyan('2. Use a cloud VM with nested virtualization enabled'));
-        console.log(chalk.cyan('3. Use a local machine or bare metal server'));
+        console.log(chalk.blue('This tool is designed for local development machines.'));
+        console.log(chalk.cyan('Please run on a system with KVM support (most modern desktops/laptops).'));
       }
     }
     process.exit(code);
@@ -219,23 +216,6 @@ const launchClaude = (args) => {
   });
 };
 
-// Read configuration
-const readConfig = () => {
-  const config = {};
-  const configPath = path.join(projectRoot, '.morphrc');
-  if (fs.existsSync(configPath)) {
-    const content = fs.readFileSync(configPath, 'utf8');
-    content.split('\n').forEach(line => {
-      if (line.trim() && !line.startsWith('#')) {
-        const [key, value] = line.split('=');
-        if (key && value) {
-          config[key.trim()] = value.trim();
-        }
-      }
-    });
-  }
-  return config;
-};
 
 // Main program
 program
@@ -247,18 +227,10 @@ program
   .argument('[claude-args...]', 'Arguments to pass to Claude CLI')
   .allowUnknownOption()
   .action((claudeArgs = [], options) => {
-    // Read config
-    const config = readConfig();
-    
-    // Check if we should skip MorphBox based on config
-    if (config.SKIP_MORPHBOX === 'true' && !options.skipMorphbox) {
-      options.skipMorphbox = true;
-      console.log(chalk.gray('(Skipping MorphBox based on .morphrc configuration)'));
-    }
-    
     // Show warning if skipping MorphBox
     if (options.skipMorphbox) {
       console.log(chalk.yellow('⚠️  Warning: Running without MorphBox protection!'));
+      console.log(chalk.yellow('This flag should only be used for testing purposes.'));
     }
     
     // Check if we're inside MorphBox
