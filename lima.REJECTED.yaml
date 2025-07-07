@@ -1,0 +1,43 @@
+# MorphBox Lima VM Configuration
+# Optimized for fast startup and AI development
+
+# VM configuration
+cpus: 4
+memory: "8GiB"
+disk: "20GiB"
+# Use Ubuntu 22.04 for stability
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-amd64.img"
+    arch: "x86_64"
+  - location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-arm64.img"
+    arch: "aarch64"
+# Mounts - only mount current directory as /workspace
+mounts:
+  - location: "~"
+    mountPoint: "/workspace"
+    writable: true
+# Disable unnecessary mounts for security
+mountType: "9p"
+mount:
+  - location: "/"
+    mountPoint: null # Disable root mount
+# Network configuration
+networks:
+  # Use default lima network
+  - lima: shared
+# Provision script
+provision:
+  - mode: system
+    script: "#!/bin/bash\nset -eux\n\n# Update package lists\napt-get update\n\n# Install essential tools\napt-get install -y \\\n  curl \\\n  git \\\n  build-essential \\\n  python3 \\\n  python3-pip \\\n  python3-venv \\\n  nodejs \\\n  npm \\\n  iptables \\\n  dnsutils \\\n  ca-certificates\n\n# Install Node.js 20 (LTS)\ncurl -fsSL https://deb.nodesource.com/setup_20.x | bash -\napt-get install -y nodejs\n\n# Update npm\nnpm install -g npm@latest\n\n# Install Claude Code CLI\nnpm install -g claude-code\n\n# Install Python packages\npip3 install --upgrade pip\npip3 install requests numpy pandas jupyter\n\n# Create workspace directory\nmkdir -p /workspace\nchmod 777 /workspace\n\n# Configure system for fast startup\n# Disable unnecessary services\nsystemctl disable apt-daily.service\nsystemctl disable apt-daily.timer\nsystemctl disable apt-daily-upgrade.timer\nsystemctl disable apt-daily-upgrade.service\n\n# Set up basic firewall rules (will be configured by firewall.sh)\niptables -P INPUT ACCEPT\niptables -P FORWARD ACCEPT\niptables -P OUTPUT ACCEPT\n\n# Create morphbox user\nuseradd -m -s /bin/bash morphbox || true\nusermod -aG sudo morphbox\necho \"morphbox ALL=(ALL) NOPASSWD:ALL\" > /etc/sudoers.d/morphbox\n\n# Set default directory\necho \"cd /workspace\" >> /home/morphbox/.bashrc\necho \"cd /workspace\" >> /root/.bashrc\n\n# Add welcome message\ncat > /etc/motd << 'MOTD_EOF'\n __  __                 _     ____            \n|  \\/  | ___  _ __ _ __| |__ | __ )  _____  __\n| |\\/| |/ _ \\| '__| '_ \\ '_ \\|  _ \\ / _ \\ \\/ /\n| |  | | (_) | |  | |_) | | | | |_) | (_) >  < \n|_|  |_|\\___/|_|  | .__/|_| |_|____/ \\___/_/\\_\\\n                  |_|                           \n\nWelcome to MorphBox - Safe AI Sandbox Environment\nType 'exit' to leave the sandbox\n\nMOTD_EOF\n"
+# SSH configuration (for Lima)
+ssh:
+  localPort: 0
+  loadDotSSHPubKeys: false
+# Optimize for fast startup
+vmType: "qemu"
+firmware:
+  legacyBIOS: true # Faster boot than UEFI
+# Environment variables
+env:
+  MORPHBOX: "true"
+  WORKSPACE: "/workspace"

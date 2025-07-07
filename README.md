@@ -22,15 +22,12 @@ npx claude-code-morph
 
 ## Prerequisites
 
-1. **MorphBox** - Install with:
-   ```bash
-   curl -sSf https://morphbox.iu.dev/install.sh | bash
-   ```
-
-2. **Claude CLI** - Install with:
-   ```bash
-   npm install -g @anthropic-ai/claude-code
-   ```
+- **Node.js** 16+ (for npm)
+- **Claude CLI** - Install with:
+  ```bash
+  npm install -g @anthropic-ai/claude-code
+  ```
+- **MorphBox** - Will be installed automatically on first run (if ../morphbox exists)
 
 ## Usage
 
